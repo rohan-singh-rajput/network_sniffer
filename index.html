@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Live Packet Log</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            font-size: 24px;
+        }
+
+        label,
+        select {
+            font-size: 16px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
+
+        /* Alternate row color */
+        tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        /* Protocol color coding */
+        tr.TCP {
+            background-color: #d0f0ff;
+        }
+
+        tr.UDP {
+            background-color: #d0ffd0;
+        }
+
+        tr.ICMP {
+            background-color: #fff4cc;
+        }
+
+        tr.OTHER {
+            background-color: #f8d0ff;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Live Network Packet Log</h1>
+
+    <label for="protocolFilter">Filter by Protocol:</label>
+    <select id="protocolFilter" onchange="fetchPackets()">
+        <option value="ALL">All</option>
+        <option value="TCP">TCP</option>
+        <option value="UDP">UDP</option>
+        <option value="ICMP">ICMP</option>
+        <option value="OTHER">Other</option>
+    </select>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Protocol</th>
+                <th>Source</th>
+                <th>Destination</th>
+                <th>Src Port</th>
+                <th>Dst Port</th>
+            </tr>
+        </thead>
+        <tbody id="packetBody">
+            <!-- dynamic content -->
+        </tbody>
+    </table>
+
+    <script>
+        async function fetchPackets() {
+            try {
+                const res = await fetch('/packets');
+                const data = await res.json();
+                const tbody = document.getElementById("packetBody");
+                const selectedProtocol = document.getElementById("protocolFilter").value;
+
+                tbody.innerHTML = "";
+
+                data.slice(-100).forEach(p => {
+                    if (selectedProtocol !== "ALL" && p.protocol !== selectedProtocol) return;
+
+                    const row = document.createElement("tr");
+                    row.className = p.protocol;
+
+                    row.innerHTML = `
+            <td>${p.protocol}</td>
+            <td>${p.source}</td>
+            <td>${p.destination}</td>
+            <td>${p.src_port !== undefined ? p.src_port : ""}</td>
+            <td>${p.dst_port !== undefined ? p.dst_port : ""}</td>
+          `;
+
+                    tbody.appendChild(row);
+                });
+
+            } catch (err) {
+                console.error("Fetch error:", err);
+            }
+        }
+
+        // Poll every 2 seconds
+        setInterval(fetchPackets, 2000);
+        fetchPackets();
+    </script>
+
+</body>
+
+</html>
